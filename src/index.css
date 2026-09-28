@@ -1,0 +1,186 @@
+@import '@fontsource-variable/archivo/wdth.css';
+@import './styles/shell.css';
+@import './styles/ui.css';
+@import './styles/pages.css';
+
+:root {
+  --stone: #ede9e1;
+  --stone-2: #e3ded3;
+  --stone-3: #d8d2c4;
+  --paper: #f8f6f1;
+  --paper-2: #fdfcf9;
+  --ink: #0c0b09;
+  --ink-2: #181612;
+  --ink-3: #26231d;
+  --text: #16140f;
+  --mute: #635d52;
+  --mute-2: #8b8475;
+  --on-ink: #ede9e1;
+  --on-ink-mute: rgba(237, 233, 225, 0.62);
+  --gold: #c9a13b;
+  --gold-hi: #e6c66a;
+  --gold-deep: #7d5e10;
+  --gold-wash: rgba(201, 161, 59, 0.14);
+  --red: #c7361b;
+  --red-soft: #f6ddd5;
+  --line: rgba(12, 11, 9, 0.11);
+  --line-2: rgba(12, 11, 9, 0.2);
+  --line-ink: rgba(237, 233, 225, 0.11);
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(12, 11, 9, 0.05), 0 10px 30px -18px rgba(12, 11, 9, 0.28);
+  --shadow-lift: 0 2px 4px rgba(12, 11, 9, 0.06), 0 22px 44px -22px rgba(12, 11, 9, 0.38);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font: 'Archivo Variable', 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--stone);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--stone);
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+figure {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--gold-hi);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+input,
+textarea {
+  caret-color: var(--gold-deep);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--stone-3) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--stone-3);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tabular,
+.mono-date,
+.amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.wide {
+  font-stretch: 118%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dim {
+  color: var(--mute-2);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
