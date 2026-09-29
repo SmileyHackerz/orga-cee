@@ -1,8 +1,8 @@
 import { Suspense, useEffect, useMemo, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
-  CalendarDays, LayoutGrid, LogOut, Megaphone, Menu, ScrollText, Search, SlidersHorizontal, Wallet, X,
+  CalendarDays, LayoutGrid, LogOut, Megaphone, Menu, PanelLeftClose, PanelLeftOpen, ScrollText, Search, SlidersHorizontal, Wallet, X,
 } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { usePublishedRows } from '../lib/store'
@@ -20,7 +20,7 @@ const ICONS: Record<PoleId, typeof LayoutGrid> = {
   secretariat: ScrollText,
 }
 
-function NavItem({ to, icon: Icon, label, code, badge, end, group }: {
+function NavItem({ to, icon: Icon, label, code, badge, end, group, collapsed }: {
   to: string
   icon?: typeof LayoutGrid
   label: string
@@ -28,9 +28,10 @@ function NavItem({ to, icon: Icon, label, code, badge, end, group }: {
   badge?: number
   end?: boolean
   group: string
+  collapsed?: boolean
 }) {
   return (
-    <NavLink to={to} end={end} className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
+    <NavLink to={to} end={end} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined} className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
       {({ isActive }) => (
         <>
           {isActive && <motion.span layoutId={`nav-active-${group}`} className="nav-link__bg" transition={{ type: 'spring', stiffness: 480, damping: 38 }} />}
@@ -57,7 +58,7 @@ function SessionClock({ endsAt }: { endsAt: number }) {
   )
 }
 
-function Sidebar({ onSearch, group, onClose }: { onSearch: () => void; group: string; onClose?: () => void }) {
+function Sidebar({ onSearch, group, onClose, collapsed = false, onToggle }: { onSearch: () => void; group: string; onClose?: () => void; collapsed?: boolean; onToggle?: () => void }) {
   const { profile, isSupervisor, logout, mode, sessionEndsAt } = useAuth()
   const tasks = usePublishedRows('tasks')
   const incidents = usePublishedRows('incidents')
@@ -75,13 +76,26 @@ function Sidebar({ onSearch, group, onClose }: { onSearch: () => void; group: st
   const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="brand">
-        <img className="brand__mark" src="/orga-mark.png" alt="" width={44} height={44} />
-        <div>
-          <span className="brand__word">ORGA</span>
-          <span className="brand__sub">Commission · CEE ESP</span>
-        </div>
+        <Link className="brand__link" to="/" aria-label="ORGA, retour à l’accueil" title="Retour à l’accueil" onClick={onClose}>
+          <img className="brand__mark" src="/orga-mark.png" alt="" width={44} height={44} />
+          <div className="brand__text">
+            <span className="brand__word">ORGA</span>
+            <span className="brand__sub">Commission · CEE ESP</span>
+          </div>
+        </Link>
+        {onToggle && (
+          <button
+            className="icon-btn sidebar__toggle"
+            aria-label={collapsed ? 'Déployer le menu' : 'Réduire le menu'}
+            aria-expanded={!collapsed}
+            title={collapsed ? 'Déployer le menu' : 'Réduire le menu'}
+            onClick={onToggle}
+          >
+            {collapsed ? <PanelLeftOpen size={19} strokeWidth={1.8} /> : <PanelLeftClose size={19} strokeWidth={1.8} />}
+          </button>
+        )}
         {onClose && (
           <button className="icon-btn" aria-label="Fermer le menu" onClick={onClose} style={{ marginLeft: 'auto', alignSelf: 'flex-start' }}>
             <X size={20} />
@@ -89,16 +103,16 @@ function Sidebar({ onSearch, group, onClose }: { onSearch: () => void; group: st
         )}
       </div>
 
-      <button className="search-btn" onClick={onSearch}>
-        <Search size={16} strokeWidth={1.8} /> Rechercher
+      <button className="search-btn" onClick={onSearch} aria-label="Rechercher" title={collapsed ? 'Rechercher' : undefined}>
+        <Search size={16} strokeWidth={1.8} /> <span className="search-btn__text">Rechercher</span>
         <kbd>{mac ? '⌘' : 'Ctrl'} K</kbd>
       </button>
 
       <nav className="nav-group" aria-label="Zones">
         <div className="nav-group__label">Zones</div>
-        <NavItem group={group} to="/" end icon={LayoutGrid} label="Vue commune" />
+        <NavItem group={group} to="/" end icon={LayoutGrid} label="Vue commune" collapsed={collapsed} />
         {POLES.map((p) => (
-          <NavItem group={group} key={p.id} to={p.path} icon={ICONS[p.id]} label={p.short} code={p.code} badge={alerts[p.id]} />
+          <NavItem group={group} key={p.id} to={p.path} icon={ICONS[p.id]} label={p.short} code={p.code} badge={alerts[p.id]} collapsed={collapsed} />
         ))}
       </nav>
 
@@ -108,11 +122,11 @@ function Sidebar({ onSearch, group, onClose }: { onSearch: () => void; group: st
           {isSupervisor && <span style={{ letterSpacing: '.1em' }}>Lecture seule</span>}
         </div>
         {profile.pole && !isSupervisor && (
-          <NavItem group={group} to={`/admin/${profile.pole}`} icon={SlidersHorizontal} label="Mon espace admin" code={poleById(profile.pole).code} />
+          <NavItem group={group} to={`/admin/${profile.pole}`} icon={SlidersHorizontal} label="Mon espace admin" code={poleById(profile.pole).code} collapsed={collapsed} />
         )}
         {isSupervisor && (
           <>
-            <NavItem group={group} to="/admin" end icon={SlidersHorizontal} label="Espaces admin" />
+            <NavItem group={group} to="/admin" end icon={SlidersHorizontal} label="Espaces admin" collapsed={collapsed} />
             <div className="nav-sub">
               {POLES.map((p) => (
                 <NavItem group={group} key={p.id} to={`/admin/${p.id}`} label={p.short} code={p.code} />
@@ -155,6 +169,22 @@ export function AppShell() {
   const location = useLocation()
   const [menu, setMenu] = useState(false)
   const [palette, setPalette] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('orga-sidebar') === 'collapsed'
+    } catch {
+      return false
+    }
+  })
+  const toggleSidebar = () =>
+    setCollapsed((v) => {
+      try {
+        localStorage.setItem('orga-sidebar', v ? 'open' : 'collapsed')
+      } catch {
+        /* ignore */
+      }
+      return !v
+    })
 
   useEffect(() => setMenu(false), [location.pathname])
 
@@ -170,15 +200,15 @@ export function AppShell() {
   }, [])
 
   return (
-    <div className="app">
-      <Sidebar onSearch={() => setPalette(true)} group="desk" />
+    <div className={`app ${collapsed ? 'is-collapsed' : ''}`}>
+      <Sidebar onSearch={() => setPalette(true)} group="desk" collapsed={collapsed} onToggle={toggleSidebar} />
 
       <div className="main">
         <header className="topbar">
-          <div className="brand">
+          <Link className="brand brand__link" to="/" aria-label="ORGA, retour à l’accueil">
             <img className="brand__mark" src="/orga-mark.png" alt="" width={34} height={34} />
             <span className="brand__word">ORGA</span>
-          </div>
+          </Link>
           <button className="icon-btn" aria-label="Rechercher" onClick={() => setPalette(true)}>
             <Search size={19} />
           </button>

@@ -2986,3 +2986,10 @@ a.meet-link:hover {
     padding-right: 11px;
   }
 }
+
+/* Affiché / Privé : le libellé double l'interrupteur, les téléphones ont besoin de la place. */
+@media (max-width: 720px) {
+  .vis__text {
+    display: none;
+  }
+}

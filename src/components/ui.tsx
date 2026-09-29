@@ -190,6 +190,7 @@ export function VisibilityToggle({ visible, onChange, disabled }: { visible: boo
       type="button"
       className={`vis ${visible ? 'is-on' : ''}`}
       aria-pressed={visible}
+      aria-label={visible ? 'Affiché au conseil' : 'Privé au pôle'}
       disabled={disabled}
       onClick={(e) => {
         e.stopPropagation()
