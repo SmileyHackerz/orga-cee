@@ -14,7 +14,8 @@ Sans configuration, l’app tourne en **mode démo** : on choisit un membre du c
 ## Brancher Supabase (données partagées par tout le conseil)
 
 1. Crée un projet gratuit sur [supabase.com](https://supabase.com).
-2. **SQL Editor** → colle et exécute `supabase/schema.sql` (tables, sécurité par pôle, temps réel, activités 2026–2027).
+2. **SQL Editor** → colle et exécute `supabase/schema.sql` (tables, sécurité par pôle, session limitée à 1 h, verrou du mot de passe provisoire, temps réel, activités 2026–2027). Ce fichier contient déjà les migrations 002 à 004 : ne les rejoue pas sur une base neuve.
+   **Base existante créée avant ce changement ?** Exécute `supabase/migration_004_securite.sql` (relançable) et ne relance pas `schema.sql`, qui remplacerait des fonctions déjà à jour.
 3. **Authentication → Users → Add user** : crée un compte pour chacun des six membres, avec le mot de passe `passer123` (coche *Auto Confirm User*). À sa première connexion, chacun devra choisir son propre mot de passe avant d’accéder à l’app. Pense aussi à désactiver *Allow new users to sign up* dans **Authentication → Sign In / Providers → Email**.
 4. Ouvre `supabase/profiles.sql`, remplace les six adresses e-mail par les vraies, puis exécute-le.
 5. **Project Settings → API** : copie l’URL du projet et la clé `anon public` dans un fichier `.env.local` :
