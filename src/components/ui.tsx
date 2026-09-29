@@ -41,7 +41,7 @@ export function Pill({ tone = 'neutral', children }: { tone?: Tone; children: Re
 
 export function Avatar({ name, size = 32, tone = 'gold' }: { name: string; size?: number; tone?: 'gold' | 'ink' | 'stone' }) {
   return (
-    <span className={`avatar avatar--${tone}`} style={{ width: size, height: size, fontSize: size * 0.36 }} aria-hidden>
+    <span className={`avatar avatar--${tone}`} style={{ width: size, height: size, fontSize: Math.max(11, size * 0.36) }} aria-hidden>
       {initials(name)}
     </span>
   )

@@ -44,7 +44,7 @@
 .brand__sub {
   display: block;
   margin-top: 5px;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--on-ink-mute);
@@ -60,7 +60,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 12px 8px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -102,7 +102,7 @@
 }
 
 .nav-link__code {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
   color: rgba(237, 233, 225, 0.38);
@@ -216,7 +216,7 @@
   display: inline-block;
   white-space: nowrap;
   margin-top: 8px;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.16em;
   padding: 4px 7px;
