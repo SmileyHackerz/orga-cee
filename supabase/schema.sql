@@ -18,31 +18,62 @@ alter table public.profiles add column if not exists must_change_password boolea
 
 alter table public.profiles enable row level security;
 
+-- Session fraîche (< 1 h depuis l'authentification), vérifiée par la base elle-même
+-- (claim « amr » du jeton signé par Supabase : heure réelle de l'authentification).
+create or replace function public.session_fresh() returns boolean
+language sql stable set search_path = public as $$
+  select coalesce(
+    (select max((a ->> 'timestamp')::bigint)
+       from jsonb_array_elements(coalesce(auth.jwt() -> 'amr', '[]'::jsonb)) as a)
+      > extract(epoch from now()) - 3600,
+    false)
+$$;
+
+-- Rôles : valables seulement si session fraîche ET mot de passe personnel (plus de passer123).
 create or replace function public.my_pole() returns text
 language sql stable security definer set search_path = public as $$
-  select pole from public.profiles where id = auth.uid() and kind = 'president'
+  select pole from public.profiles
+  where id = auth.uid() and kind = 'president' and not must_change_password and public.session_fresh()
 $$;
 
 create or replace function public.is_supervisor() returns boolean
 language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and kind = 'supervisor')
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and kind = 'supervisor' and not must_change_password and public.session_fresh()
+  )
 $$;
 
 create or replace function public.is_council() returns boolean
 language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid())
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and not must_change_password and public.session_fresh()
+  )
 $$;
+
+-- Chacun lit toujours son propre profil (écran « Bienvenue »), le conseil lit les autres.
+drop policy if exists "profil personnel" on public.profiles;
+create policy "profil personnel" on public.profiles for select using (id = auth.uid());
 
 drop policy if exists "profiles lisibles par le conseil" on public.profiles;
 create policy "profiles lisibles par le conseil" on public.profiles for select using (public.is_council());
 
--- Called by the app right after a member replaces the initial password (passer123) with their own.
-create or replace function public.password_changed() returns void
-language sql security definer set search_path = public as $$
-  update public.profiles set must_change_password = false where id = auth.uid()
-$$;
-revoke all on function public.password_changed() from public, anon;
-grant execute on function public.password_changed() to authenticated;
+-- Appelée par l'app après le changement du mot de passe provisoire :
+-- le verrou ne se lève que si le mot de passe n'est plus passer123.
+drop function if exists public.password_changed();
+create function public.password_changed() returns boolean
+language plpgsql security definer set search_path = public, extensions as $$
+declare still_default boolean;
+begin
+  select crypt('passer123', encrypted_password) = encrypted_password into still_default
+  from auth.users where id = auth.uid();
+  if coalesce(still_default, true) then
+    return false;
+  end if;
+  update public.profiles set must_change_password = false where id = auth.uid();
+  return true;
+end $$;
 
 -- ---------- tables des pôles ----------
 create or replace function public.touch_updated_at() returns trigger
@@ -310,12 +341,29 @@ begin
   end loop;
 end $$;
 
+-- Lit un réglage booléen du pôle Finance (créé ici car la table settings doit exister).
+create or replace function public.finance_flag(k text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select value = 'true' from public.settings where pole = 'finance' and key = k limit 1), false)
+$$;
+
 -- ---------- accès : seuls les comptes connectés passent, les règles ci-dessus filtrent ----------
 -- Explicit grants, so the app works even when "Automatically expose new tables" is disabled.
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke all on all tables in schema public from anon;
-grant execute on function public.my_pole(), public.is_supervisor(), public.is_council() to authenticated;
+revoke all on function public.session_fresh(), public.my_pole(), public.is_supervisor(), public.is_council(), public.finance_flag(text), public.password_changed() from public, anon;
+grant execute on function public.session_fresh(), public.my_pole(), public.is_supervisor(), public.is_council(), public.finance_flag(text), public.password_changed() to authenticated;
+
+-- ---------- caisse : les superviseurs ne la voient que si la Finance l'autorise ----------
+drop policy if exists "lecture conseil" on public.transactions;
+create policy "lecture conseil" on public.transactions for select using (
+  public.is_council() and (
+    visible
+    or pole = public.my_pole()
+    or (public.is_supervisor() and public.finance_flag('caisse_supervisors'))
+  )
+);
 
 -- ---------- données réelles de départ ----------
 insert into public.activities (title, month, status)
@@ -344,8 +392,9 @@ select * from (values
 ) as v(name, role, member_poles)
 where not exists (select 1 from public.members);
 
-insert into public.settings (pole, key, value) values
-  ('finance', 'wave_number', ''),
-  ('finance', 'rates', '{"membre":1000,"chef_pole":1500,"secretaire":1500,"president":2000,"adjoint":2000}'),
-  ('finance', 'publish_rate', 'false')
+insert into public.settings (pole, key, value, visible) values
+  ('finance', 'wave_number', '', false),
+  ('finance', 'rates', '{"membre":1000,"chef_pole":1500,"secretaire":1500,"president":2000,"adjoint":2000}', false),
+  ('finance', 'publish_rate', 'false', true),
+  ('finance', 'caisse_supervisors', 'true', true)
 on conflict (pole, key) do nothing;

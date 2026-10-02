@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, ChevronLeft, ChevronRight, Download, MessageCircle, Minus, Plus, Search, Trash2, Video } from 'lucide-react'
 import { useRows, useStore, type DataStore } from '../lib/store'
-import type { Attendance, MeetingAudience, MemberRole, PoleId, Setting } from '../lib/types'
+import type { Attendance, Contribution, MeetingAudience, MemberRole, PoleId, Setting } from '../lib/types'
 import { ACADEMIC_MONTHS, MEMBER_ROLE } from '../lib/poles'
 import { contributionRate, ratesFrom, setting } from '../lib/derived'
 import { capitalize, currentMonth, formatCFA, fullDate, monthLabel, monthShort, todayISO } from '../lib/dates'
@@ -157,9 +157,12 @@ export function ContributionsAdmin({ readOnly }: { readOnly: boolean }) {
 
   const find = (memberId: string, m: string) => contributions.find((c) => c.member_id === memberId && c.month === m)
 
-  const publish = async (m: string, next: typeof contributions) => {
-    const r = contributionRate(members, next, m)
-    if (r) await upsertSetting(store, settings, `rate:${m}`, JSON.stringify({ paid: r.paid, total: r.total }))
+  // Aggregates are stored only while the pole publishes them, and are recomputed from the store's
+  // latest rows so two quick clicks never publish a stale count.
+  const publish = async (m: string) => {
+    if (setting(store.get('settings') as Setting[], 'publish_rate') !== 'true') return
+    const r = contributionRate(members, store.get('contributions') as Contribution[], m)
+    if (r) await upsertSetting(store, store.get('settings') as Setting[], `rate:${m}`, JSON.stringify({ paid: r.paid, total: r.total }))
   }
 
   const toggle = async (memberId: string, role: MemberRole, m: string) => {
@@ -167,13 +170,9 @@ export function ContributionsAdmin({ readOnly }: { readOnly: boolean }) {
     setPending(key)
     try {
       const existing = find(memberId, m)
-      if (existing) {
-        await store.remove('contributions', existing.id)
-        await publish(m, contributions.filter((c) => c.id !== existing.id))
-      } else {
-        const created = await store.insert('contributions', { member_id: memberId, month: m, amount: rates[role], method: 'wave', paid_on: todayISO(), pole: 'finance', visible: false })
-        await publish(m, [...contributions, created])
-      }
+      if (existing) await store.remove('contributions', existing.id)
+      else await store.insert('contributions', { member_id: memberId, month: m, amount: rates[role], method: 'wave', paid_on: todayISO(), pole: 'finance', visible: false })
+      await publish(m)
     } catch {
       toast('Enregistrement impossible. Vérifie ta connexion.', 'error')
     }
@@ -435,8 +434,12 @@ export function FinanceSettings({ readOnly }: { readOnly: boolean }) {
       if (v) {
         for (const m of ACADEMIC_MONTHS) {
           const r = contributionRate(members, contributions, m)
-          if (r && r.paid) await upsertSetting(store, settings, `rate:${m}`, JSON.stringify({ paid: r.paid, total: r.total }))
+          if (r && r.paid) await upsertSetting(store, store.get('settings') as Setting[], `rate:${m}`, JSON.stringify({ paid: r.paid, total: r.total }))
         }
+      } else {
+        // Unpublishing must also remove the stored aggregates: the council can still read them through the API.
+        const stored = (store.get('settings') as Setting[]).filter((s) => s.pole === 'finance' && s.key.startsWith('rate:'))
+        for (const s of stored) await store.remove('settings', s.id)
       }
       toast(v ? 'Taux publié dans la vue commune' : 'Taux masqué au conseil')
     } catch {
