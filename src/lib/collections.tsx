@@ -42,6 +42,8 @@ export interface CollectionDef {
   sort?: (a: Record<string, unknown>, b: Record<string, unknown>) => number
   defaults?: Record<string, unknown>
   help?: string
+  /** Files attached to each item (activity sheets, meeting PV). */
+  attachments?: { title: string; hint: string }
 }
 
 const pill = (list: Option[], v: unknown) => {
@@ -94,7 +96,8 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
     singular: 'activité',
     newLabel: 'Nouvelle activité',
     defaultVisible: true,
-    help: 'Le calendrier de la Commission. Chaque activité a sa fiche détaillée et sa check-list.',
+    help: 'Le calendrier de la Commission. Chaque activité a sa fiche détaillée, sa check-list et ses fichiers (photos, documents, présentations).',
+    attachments: { title: 'Fiches de l’activité', hint: 'Photos, PDF, Word, PowerPoint, Excel, notes… jusqu’à 50 Mo par fichier. Tu peux aussi les glisser ici.' },
     fields: [
       { key: 'title', label: 'Nom de l’activité', type: 'text', required: true, full: true },
       { key: 'month', label: 'Mois', type: 'month', required: true },
@@ -288,7 +291,8 @@ export const COLLECTIONS: Record<string, CollectionDef> = {
     singular: 'réunion',
     newLabel: 'Programmer une réunion',
     defaultVisible: true,
-    help: 'La prochaine réunion et son ordre du jour s’affichent en tête de la vue commune.',
+    help: 'La prochaine réunion et son ordre du jour s’affichent en tête de la vue commune. Ouvre une réunion pour y déposer son PV.',
+    attachments: { title: 'PV de la réunion', hint: 'Le PV et les documents de la réunion : PDF, Word, notes, photos du tableau… jusqu’à 50 Mo par fichier.' },
     fields: [
       { key: 'audience', label: 'Type de réunion', type: 'select', options: OPTIONS.meetingAudience, full: true, hint: 'Le lien Meet correspondant (onglet Liens Meet) s’affiche automatiquement.' },
       { key: 'date', label: 'Date', type: 'date', required: true },

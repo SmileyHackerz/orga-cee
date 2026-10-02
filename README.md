@@ -15,6 +15,7 @@ Sans configuration, l’app tourne en **mode démo** : on choisit un membre du c
 
 1. Crée un projet gratuit sur [supabase.com](https://supabase.com).
 2. **SQL Editor** → colle et exécute `supabase/schema.sql` (tables, sécurité par pôle, temps réel, activités 2026–2027).
+   Exécute ensuite, dans l’ordre, `migration_002.sql`, `migration_003.sql`, `migration_004_securite.sql` (session d’1 h, premier accès verrouillé) et `migration_005_fichiers.sql` (fichiers joints : fiches des activités, PV des réunions).
 3. **Authentication → Users → Add user** : crée un compte pour chacun des six membres, avec le mot de passe `passer123` (coche *Auto Confirm User*). À sa première connexion, chacun devra choisir son propre mot de passe avant d’accéder à l’app. Pense aussi à désactiver *Allow new users to sign up* dans **Authentication → Sign In / Providers → Email**.
 4. Ouvre `supabase/profiles.sql`, remplace les six adresses e-mail par les vraies, puis exécute-le.
 5. **Project Settings → API** : copie l’URL du projet et la clé `anon public` dans un fichier `.env.local` :

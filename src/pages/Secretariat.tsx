@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, ChevronDown, Clock, ExternalLink, MapPin, Video } from 'lucide-react'
+import { CalendarDays, ChevronDown, Clock, ExternalLink, MapPin, Paperclip, Video } from 'lucide-react'
 import { usePublishedRows } from '../lib/store'
 import { OPTIONS, optionOf } from '../lib/options'
 import { byDue, isOpen, meetLink, meetingKind, nextMeeting, pastMeetings } from '../lib/derived'
@@ -10,6 +10,7 @@ import { capitalize, dueLabel, fullDate, meetingDateTime, shortDate, timeLabel }
 import type { PoleId } from '../lib/types'
 import { safeUrl } from '../lib/url'
 import { PoleHeader } from '../components/PoleHeader'
+import { AttachmentList } from '../components/Attachments'
 import { Card, Countdown, EASE, EmptyState, Pill, PoleTag, Segmented, rise, stagger } from '../components/ui'
 
 export function Secretariat() {
@@ -20,6 +21,7 @@ export function Secretariat() {
   const members = usePublishedRows('members')
   const attendance = usePublishedRows('attendance')
   const settings = usePublishedRows('settings')
+  const files = usePublishedRows('attachments')
   const location = useLocation()
   const [pole, setPole] = useState<'tous' | PoleId>('tous')
   const [scope, setScope] = useState<'ouvertes' | 'toutes'>('ouvertes')
@@ -39,7 +41,21 @@ export function Secretariat() {
     [tasks, pole, scope],
   )
   const register = [...decisions].sort((a, b) => b.number - a.number)
-  const pvs = [...minutes].sort((a, b) => b.meeting_date.localeCompare(a.meeting_date))
+  // One entry per PV: written PV and the files the SG dropped on the meeting of the same day.
+  const pvs = useMemo(() => {
+    const fileCount = (meetingId: string) => files.filter((f) => f.parent_table === 'meetings' && f.parent_id === meetingId).length
+    const used = new Set<string>()
+    const entries = minutes.map((m) => {
+      const mt = meetings.find((x) => x.date === m.meeting_date && fileCount(x.id) > 0)
+      if (mt) used.add(mt.id)
+      return { id: m.id, date: m.meeting_date, title: m.title, summary: m.summary, body: m.body, link: m.link, meetingId: mt?.id ?? null, count: mt ? fileCount(mt.id) : 0 }
+    })
+    for (const mt of meetings) {
+      if (used.has(mt.id) || !fileCount(mt.id)) continue
+      entries.push({ id: mt.id, date: mt.date, title: `PV · ${meetingKind(mt)}`, summary: null, body: null, link: null, meetingId: mt.id, count: fileCount(mt.id) })
+    }
+    return entries.sort((a, b) => b.date.localeCompare(a.date))
+  }, [minutes, meetings, files])
   const past = pastMeetings(meetings).slice(0, 6).reverse()
 
   return (
@@ -190,8 +206,9 @@ export function Secretariat() {
                 return (
                   <div key={m.id} className={`pv ${on ? 'is-open' : ''}`}>
                     <button className="pv__head" aria-expanded={on} onClick={() => setOpenPv(on ? null : m.id)}>
-                      <span className="mono-date">{shortDate(m.meeting_date)}</span>
+                      <span className="mono-date">{shortDate(m.date)}</span>
                       <b>{m.title}</b>
+                      {m.count > 0 && <span className="pv__files" aria-label={`${m.count} fichier${m.count > 1 ? 's' : ''}`}><Paperclip size={13} />{m.count}</span>}
                       <ChevronDown size={18} className="pv__chev" />
                     </button>
                     <AnimatePresence initial={false}>
@@ -203,6 +220,7 @@ export function Secretariat() {
                             {link && (
                               <p><a className="link-more" href={link} target="_blank" rel="noreferrer">Ouvrir le document <ExternalLink size={13} /></a></p>
                             )}
+                            {m.meetingId && <AttachmentList parent="meetings" parentId={m.meetingId} />}
                           </div>
                         </motion.div>
                       )}

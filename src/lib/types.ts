@@ -153,6 +153,18 @@ export interface Decision extends BaseRow {
   status: 'adoptee' | 'en_application' | 'appliquee' | 'abandonnee'
 }
 
+/** A file attached to an activity (Logistique: fiches) or a meeting (Secrétariat: PV). */
+export type AttachmentParent = 'activities' | 'meetings'
+
+export interface Attachment extends BaseRow {
+  parent_table: AttachmentParent
+  parent_id: string
+  name: string
+  path: string
+  size: number | null
+  mime: string | null
+}
+
 export interface Setting extends BaseRow {
   key: string
   value: string
@@ -176,6 +188,7 @@ export interface Tables {
   minutes: Minute
   decisions: Decision
   settings: Setting
+  attachments: Attachment
 }
 
 export type TableName = keyof Tables

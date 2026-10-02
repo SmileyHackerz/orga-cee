@@ -9,6 +9,10 @@ export interface Backend {
   update(table: TableName, id: string, patch: Record<string, unknown>): Promise<BaseRow>
   remove(table: TableName, id: string): Promise<void>
   subscribe(onChange: (table: TableName | '*') => void): () => void
+  /** Stored files: upload, temporary links (1 h), deletion. */
+  upload(path: string, file: File, contentType: string): Promise<void>
+  fileUrl(path: string, downloadName?: string): Promise<string>
+  removeFile(path: string): Promise<void>
 }
 
 type Status = 'idle' | 'loading' | 'ready' | 'error'

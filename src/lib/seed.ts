@@ -188,6 +188,6 @@ export function buildSeed(): Partial<Record<TableName, BaseRow[]>> {
 
   return {
     members, activities, checklist, tasks, incidents, announcements, visuals, posts,
-    contributions, transactions, ideas, partners, meetings, attendance, minutes, decisions, settings,
+    contributions, transactions, ideas, partners, meetings, attendance, minutes, decisions, settings, attachments: [],
   }
 }

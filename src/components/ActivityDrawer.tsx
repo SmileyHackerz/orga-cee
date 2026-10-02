@@ -7,6 +7,7 @@ import { useAuth } from '../lib/auth'
 import { OPTIONS, optionOf } from '../lib/options'
 import { capitalize, dueLabel, fullDate, monthLabel, timeLabel } from '../lib/dates'
 import { Button, CheckBox, Drawer, EmptyState, Pill, PoleTag, useToast } from './ui'
+import { AttachmentList } from './Attachments'
 
 export function ActivityDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
   const activities = usePublishedRows('activities')
@@ -19,6 +20,8 @@ export function ActivityDrawer({ id, onClose }: { id: string | null; onClose: ()
   const a = activities.find((x) => x.id === id)
   const editable = canEdit('logistique')
 
+  const files = usePublishedRows('attachments')
+  const hasFiles = files.some((f) => f.parent_table === 'activities' && f.parent_id === id)
   const items = useMemo(() => checklist.filter((c) => c.activity_id === id), [checklist, id])
   const linkedTasks = useMemo(() => tasks.filter((t) => t.activity_id === id), [tasks, id])
   const linkedIncidents = useMemo(() => incidents.filter((i) => i.activity_id === id), [incidents, id])
@@ -83,6 +86,13 @@ export function ActivityDrawer({ id, onClose }: { id: string | null; onClose: ()
                   <li key={i}><span>{String(i + 1).padStart(2, '0')}</span>{s}</li>
                 ))}
               </ol>
+            </section>
+          )}
+
+          {hasFiles && (
+            <section className="sheet__sec">
+              <h3>Fiches de l’activité</h3>
+              <AttachmentList parent="activities" parentId={a.id} />
             </section>
           )}
 

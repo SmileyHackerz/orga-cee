@@ -6,10 +6,13 @@ import { useAuth } from '../lib/auth'
 import { usePublishedRows } from '../lib/store'
 import { meetLink, meetingKind } from '../lib/derived'
 import { Button, Countdown, Drawer, EmptyState, PoleTag } from './ui'
+import { AttachmentList } from './Attachments'
 
 export function MeetingDrawer({ meeting, open, onClose }: { meeting: Meeting | undefined; open: boolean; onClose: () => void }) {
   const { canEdit } = useAuth()
   const settings = usePublishedRows('settings')
+  const files = usePublishedRows('attachments')
+  const hasFiles = !!meeting && files.some((f) => f.parent_table === 'meetings' && f.parent_id === meeting.id)
   const link = meeting ? meetLink(settings, meeting.audience) : null
   const points = meeting?.agenda?.split('\n').filter(Boolean) ?? []
   return (
@@ -63,6 +66,12 @@ export function MeetingDrawer({ meeting, open, onClose }: { meeting: Meeting | u
               </ol>
             )}
           </section>
+          {hasFiles && (
+            <section className="sheet__sec">
+              <h3>Documents de la réunion</h3>
+              <AttachmentList parent="meetings" parentId={meeting.id} />
+            </section>
+          )}
         </div>
       )}
     </Drawer>

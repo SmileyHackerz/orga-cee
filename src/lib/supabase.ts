@@ -5,6 +5,8 @@ import type { BaseRow, TableName } from './types'
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
+const BUCKET = 'fichiers'
+
 export const supabase: SupabaseClient | null = url && key ? createClient(url, key) : null
 
 export function createSupabaseBackend(client: SupabaseClient): Backend {
@@ -27,6 +29,19 @@ export function createSupabaseBackend(client: SupabaseClient): Backend {
     },
     async remove(table, id) {
       const { error } = await client.from(table).delete().eq('id', id)
+      if (error) throw error
+    },
+    async upload(path, file, contentType) {
+      const { error } = await client.storage.from(BUCKET).upload(path, file, { contentType, upsert: false, cacheControl: '3600' })
+      if (error) throw error
+    },
+    async fileUrl(path, downloadName) {
+      const { data, error } = await client.storage.from(BUCKET).createSignedUrl(path, 3600, downloadName ? { download: downloadName } : undefined)
+      if (error) throw error
+      return data.signedUrl
+    },
+    async removeFile(path) {
+      const { error } = await client.storage.from(BUCKET).remove([path])
       if (error) throw error
     },
     subscribe(onChange) {

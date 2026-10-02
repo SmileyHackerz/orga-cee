@@ -7,6 +7,8 @@ import { useRows, useStore } from '../lib/store'
 import type { PoleId, TableName } from '../lib/types'
 import { RecordForm, type Values } from './RecordForm'
 import { Button, ConfirmButton, Drawer, EmptyState, VisibilityToggle, useToast } from './ui'
+import { AttachmentsAdmin, removeAttachmentsOf } from './Attachments'
+import type { AttachmentParent } from '../lib/types'
 
 type Editing = { mode: 'new' } | { mode: 'edit'; id: string } | null
 
@@ -65,7 +67,13 @@ export function CollectionAdmin({ def, pole, readOnly, editId, onEditHandled, to
         await store.update(def.table, editing.id, { ...values, visible } as never)
         toast('Modifications enregistrées')
       } else {
-        await store.insert(def.table, { ...values, pole, visible } as never)
+        const created = await store.insert(def.table, { ...values, pole, visible } as never)
+        if (def.attachments) {
+          toast('Ajouté. Tu peux maintenant joindre des fichiers.')
+          setEditing({ mode: 'edit', id: created.id })
+          setBusy(false)
+          return
+        }
         toast(`Ajouté à « ${def.label} »`)
       }
       setEditing(null)
@@ -78,6 +86,7 @@ export function CollectionAdmin({ def, pole, readOnly, editId, onEditHandled, to
   const remove = async () => {
     if (editing?.mode !== 'edit') return
     try {
+      if (def.attachments) await removeAttachmentsOf(store, def.table as AttachmentParent, editing.id)
       await store.remove(def.table, editing.id)
       toast('Supprimé')
       setEditing(null)
@@ -201,6 +210,19 @@ export function CollectionAdmin({ def, pole, readOnly, editId, onEditHandled, to
             disabled={readOnly}
             onSubmit={save}
           />
+        )}
+        {def.attachments && editing?.mode === 'edit' && (
+          <AttachmentsAdmin
+            parent={def.table as AttachmentParent}
+            parentId={editing.id}
+            pole={pole}
+            readOnly={readOnly}
+            title={def.attachments.title}
+            hint={def.attachments.hint}
+          />
+        )}
+        {def.attachments && editing?.mode === 'new' && (
+          <p className="coll-help" style={{ marginTop: 18 }}>Après « Ajouter », tu pourras joindre des fichiers ({def.attachments.title.toLowerCase()}).</p>
         )}
       </Drawer>
     </div>
